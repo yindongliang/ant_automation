@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="build" name="wcinstall">
+    <property file="build.properties"/>
+    <property environment="env"/>
+    <dirname property="javahome" file="${java.home}"/>
+	<exec executable="hostname" outputproperty="hostname" />
+
+    <target name="echo">
+        <echo message="ant.file = ${ant.file}"/>
+        <echo message="ant.home = ${ant.home}"/>
+        <echo message="ant.java.version = ${ant.java.version}"/>
+        <echo>basedir = ${basedir}</echo>
+		<echo>Ant lib home(ant.library.dir) = ${ant.library.dir} </echo>
+		<echo message=" java.home = ${java.home}" />
+		<echo message=" JAVA_HOME = ${javahome}" />
+		<echo message="hostname = ${hostname}" />
+  </target>
+    <target name="help">
+    	<echo message="Usage: Targets for Installation and Configuration of WebCenter Portal and Content" />
+    	<echo message="help ---------------- Usage for targets" />
+    	<echo message="build --------------- Install and Configurate WebCenter Portal and Content(Default)" />
+    	<echo message="install-nodownload -- Install WebCenter Portal and Content with download Shiphome" />
+    	<echo message="download-rcu -------- Only download Repository Creation Utility(RCU)" />
+    	<echo message="download-wcp -------- Only download WebCenter Portal" />
+    	<echo message="download-wcc -------- Only download WebCenter Content" />
+    	<echo message="download-shiphome --- Download RCU, WebCenter Portal, WebCenter Content" />
+    	<echo message="unzip-rcu ----------- Only unzip RCU" />
+    	<echo message="unzip-wcp ----------- Only unzip WebCenter Portal" />
+    	<echo message="unzip-wcc ----------- Only unzip WebCenter Content" />
+    	<echo message="unzip --------------- Unzip RCU, WebCenter Portal, WebCenter Content" />
+    	<echo message="install-rcu --------- Install Repository Creation Utility(RCU)" />
+    	<echo message="uninstall-rcu ------- Unnstall Repository Creation Utility(RCU)" />
+    	<echo message="install-wls --------- Install Weblogic Server" />
+    	<echo message="install-wcp --------- Install WebCenter Portal Software" />
+    	<echo message="install-wcc --------- Install WebCenter Content Software" />
+    	<echo message="config-domain ------- Create and configurate domain from templetes" />
+    	<echo message="clean --------------- Remove RCU and Fussion Middleware Home" />
+    	<echo message="clean-all ----------- Remove Shiphome, RCU and Fussion Middleware Home" />
+    </target>
+    <target name="init" description="Inital build environment e.g. directory,dependency libs" depends="init-scp,init-contrib">
+        <mkdir dir="${dir.shiphome}" />
+		<mkdir dir="${dir.logs}" />
+		<mkdir dir="${middlewarehome}" />
+    </target>
+    <target name="check-scp">
+        <condition property="scp.notfound">
+            <not>
+                <typefound name="scp"/>
+            </not>
+        </condition>
+    </target>
+    <target name="init-scp" depends="check-scp" if="scp.notfound">
+        <echo  message="scp lib not foud? ${scp.notfound}" />
+    	<get src="${ant.lib.scp}" dest="${ant.library.dir}"/>
+    </target>
+    <target name="check-contrib">
+     <condition property="contrib.notfound">
+         <not>
+             <available file="${ant.library.dir}/ant-contrib-1.0b3.jar" />
+         </not>
+     </condition>
+	</target>
+	<target name="init-contrib" depends="check-contrib" if="contrib.notfound">
+		<echo  message="ant-contrib lib not foud? ${contrib.notfound}" />
+		<get src="${ant.lib.contrib}" dest="${ant.library.dir}"/>
+	</target>
+
+    <target name="build" description="build webcenter portal and ucm domain from scratch" depends="init,download-shiphome, unzip, install-rcu, install-wls, install-wcp, install-wcc, config-domain" />
+    <target name="install-nodownload" description="build webcenter portal and ucm domain when shiphome has been downloaded" depends="init, install-rcu, install-wls, install-wcp, install-wcc, config-domain" />
+	<target name="install-norcu" description="build webcenter portal and ucm domain using exist rcu schemas" depends="init, install-wls, install-wcp, install-wcc, config-domain" />
+    <target name="download-shiphome" description="download rcu,wls,wcp,wcc" depends="download-wls, download-rcu, download-wcp, download-wcc" />
+    <target name="download-wls" description="download weblogic build" depends="check-wls" unless="wls.present">
+		<get src="${res.wls}" dest="${dir.shiphome}"/>
+    </target>
+    <target name="check-wls">
+		<available file="${installer.wls}" property="wls.present" />
+    </target>
+    <target name="download-rcu" description="download rcu build">
+    	<scp file="${scp.user}:${scp.pass}@${scp.server}:${res.rcu}" todir="${dir.shiphome}" trust="yes" />
+    </target>
+    <target name="download-wcp" description="download webcenter portal build">
+    	<scp file="${scp.user}:${scp.pass}@${scp.server}:${res.wcp}" todir="${dir.shiphome}" trust="yes" />
+    </target>
+    <target name="download-wcc" description="download webcenter content build">
+    	<scp file="${scp.user}:${scp.pass}@${scp.server}:${res.wcc}" todir="${dir.shiphome}" trust="yes"  />
+    </target>
+    <target name="download-sites" description="download webcenter sites build">
+    	<scp sftp="true" file="${scp.sites.user}:${scp.sites.pass}@${scp.sites.server}:${res.sites}" todir="${dir.shiphome}" trust="yes"  />
+    </target>  
+    
+    <target name="unzip-rcu">
+    	<unzip src="${dir.shiphome}/rcuHome.zip" dest="${path.shiphome.rcu}" />
+    	<exec executable="chmod">
+    		<arg line="a+x -R ${path.shiphome.rcu}" />
+    	</exec>
+    </target>
+    <target name="unzip-wcp">
+		<unzip dest="${dir.shiphome}" >
+			<fileset dir="${dir.shiphome}" >
+				<include name="**/wc*.zip"/>
+			</fileset>
+		</unzip>
+    	<exec executable="chmod">
+    		<arg line="a+x -R ${path.shiphome.wcp}" />
+    	</exec>
+    </target>
+    <target name="unzip-wcc">
+		<unzip dest="${dir.shiphome}">
+			<fileset dir="${dir.shiphome}">
+				<include name="**/ecm_main*.zip"/>
+			</fileset>
+		</unzip>
+    	<exec executable="chmod">
+    		<arg line="a+x -R ${path.shiphome.wcc}" />
+    	</exec>
+    </target>
+	
+     <target name="unzip-sites">
+    	<unzip src="${res.sites}" dest="." />
+    	<exec executable="chmod">
+    		<arg line="a+x -R ${path.shiphome.sites}" />
+    	</exec>
+    </target>   
+    <target name="unzip" depends="unzip-rcu, unzip-wcp, unzip-wcc" />
+    <target name="install-rcu" description="create webcenter protal and content schemas">
+        <exec executable="${installer.rcu}" failonerror="true" input="${rcu.passwordfile}">
+        	<arg value="-silent" />
+        	<arg value="-createRepository" />
+        	<arg value="-databaseType ${databaseType}" />
+        	<arg value="-connectString ${connectString}" />
+        	<arg value="-dbUser ${dbUser}" />
+        	<arg value="-dbRole ${dbRole}" />
+        	<arg value="-schemaPrefix ${schemaPrefix}" />
+        	<arg value="-component MDS" />
+        	<arg value="-component WEBCENTER" />
+        	<arg value="-component PORTLET" />
+        	<arg value="-component DISCUSSIONS" />
+        	<arg value="-component ACTIVITIES" />
+        	<arg value="-component CONTENTSERVER11" />
+        </exec>
+    </target>
+    <target name="uninstall-rcu" >
+        <exec executable="${installer.rcu}" inputString="${syspasswd}" failonerror="true">
+        	<arg value="-silent" />
+        	<arg value="-dropRepository" />
+        	<arg value="-databaseType ${databaseType}" />
+        	<arg value="-connectString ${connectString}" />
+        	<arg value="-dbUser ${dbUser}" />
+        	<arg value="-dbRole ${dbRole}" />
+        	<arg value="-schemaPrefix ${schemaPrefix}" />
+        	<arg value="-component MDS" />
+        	<arg value="-component WEBCENTER" />
+        	<arg value="-component PORTLET" />
+        	<arg value="-component DISCUSSIONS" />
+        	<arg value="-component ACTIVITIES" />
+        	<arg value="-component CONTENTSERVER11" />
+        </exec>
+    </target>
+    <target name="install-wls">
+	    <delete file="silent.xml" failonerror="false" />
+    	<copy file="silent.xml.template" tofile="silent.xml" />
+    	<replace file="silent.xml" token="%MW_HOME%" value="${middlewarehome}" />
+    	<replace file="silent.xml" token="%JAVA_HOME%" value="${javahome}" />
+    	<java jar="${installer.wls}" fork="true" failonerror="true">
+    		<arg value="-mode=silent" />
+    		<arg value="-silent_xml=silent.xml" />
+    	</java>
+    </target>
+    <target name="install-wcp">
+		<delete file="wcp.rsp" failonerror="false" />
+    	 <copy file="wcp.rsp.template" tofile="wcp.rsp" />
+    	 <replace file="wcp.rsp" token="%MW_HOME%" value="${middlewarehome}" />
+        <exec executable="${path.shiphome.wcp}/Disk1/runInstaller" failonerror="true" output="${dir.logs}/Portal-install.log">
+        	<arg line="-response ${basedir}/wcp.rsp -silent -jreLoc ${javahome}" />
+        </exec>
+		<echo message="${dir.logs}/Portal-install.log" />
+		<sleep minutes="5" />
+	   <waitfor maxwait="5" maxwaitunit="minute"   timeoutproperty="protal.install.fail">
+			<available file="${middlewarehome}/Oracle_WC1/common/bin/config.sh"/>
+        </waitfor>
+		<echo message="protal.install.fail = ${protal.install.fail}" />
+        <fail if="protal.install.fail"> Portal installation is failure.Please check.</fail>
+    </target>
+    <target name="install-wcc">
+		<delete file="wcc.rsp" failonerror="false" />
+    	 <copy file="wcc.rsp.template" tofile="wcc.rsp" />
+    	 <replace file="wcc.rsp" token="%MW_HOME%" value="${middlewarehome}" />
+        <exec executable="${path.shiphome.wcc}/Disk1/runInstaller" inputString="${javahome}"  failonerror="true" 
+		      output="${dir.logs}/ECM-install.log"> 
+        	<arg line="-response ${basedir}/wcc.rsp -silent" />
+        </exec>
+		<echo message="${dir.logs}/ECM-install.log" />
+		<sleep minutes="5" />
+   	   <waitfor maxwait="5" maxwaitunit="minute"   timeoutproperty="ecm.install.fail">
+			<available file="${middlewarehome}/Oracle_ECM1/common/bin/config.sh"/>
+        </waitfor>
+		<echo message="ecm.install.fail = ${ecm.install.fail}" />
+        <fail if="ecm.install.fail"> ECM installation is failure.Please check.</fail>
+    </target>
+    <target name="check-port-availabe" >
+        <echo message="Check admin server port  ${port.admin}  " />
+         <fail message="Port ${port.admin}  already in use">
+            <condition>
+                <socket port="${port.admin}" server="${hostname}"/>
+            </condition>
+         </fail>	 
+         <echo message="Check Spaces server port ${port.spaces} is using?" />
+         <fail message="Port ${port.spaces}  already in use">
+            <condition>
+                <socket port="${port.spaces}" server="${hostname}"/>
+            </condition>
+         </fail>    
+         <echo message="Check Portlet server port {port.portlet} is using?" />
+         <fail message="Port ${port.portlet}  already in use">
+            <condition>
+                <socket port="${port.portlet}" server="${hostname}"/>
+            </condition>
+         </fail>  
+         <echo message="Check Collaboration server port ${port.collaboration} is using?" />
+         <fail message="Port ${port.collaboration}  already in use">
+            <condition>
+                <socket port="${port.collaboration}" server="${hostname}"/>
+            </condition>
+         </fail>  
+         <echo message="Check Utilities server port {port.utilities} is using?" />
+         <fail message="Port ${port.utilities}  already in use">
+            <condition>
+                <socket port="${port.utilities}" server="${hostname}"/>
+            </condition>
+         </fail>  
+         <echo message="Check UCM server port ${port.ucm} is using?" />
+         <fail message="Port ${port.ucm}  already in use">
+            <condition>
+                <socket port="${port.ucm}" server="${hostname}"/>
+            </condition>
+         </fail> 		 
+    </target>
+    <target name="config-domain" depends="check-port-availabe">
+		<delete file="createDomain.py" failonerror="false" />
+    	 <copy file="createDomain.py.template" tofile="createDomain.py" />
+    	 <replace file="createDomain.py" token="%JAVA_HOME%" value="${javahome}" />
+    	 <replace file="createDomain.py" token="%MW_HOME%" value="${middlewarehome}" />
+		 <replace file="createDomain.py" token="%DOMAIN_HOME%" value="${domain.home}" />
+    	 <replace file="createDomain.py" token="%DOMAIN_NAME%" value="${domain.name}" />
+		 <replace file="createDomain.py" token="%ADMIN_USER_PASSWD%" value="${password}" />
+    	 <replace file="createDomain.py" token="%JDBC_URL%" value="${jdbc.url}" />
+    	 <replace file="createDomain.py" token="%JDBC_PASSWORD%" value="${jdbc.password}" />
+    	 <replace file="createDomain.py" token="%USER_PREFIX%" value="${schemaPrefix}" />
+		 <replace file="createDomain.py" token="%SERVER_ADMIN_NAME%" value="${server.name.admin}" />
+		 <replace file="createDomain.py" token="%port.admin%" value="${port.admin}" />
+		 <replace file="createDomain.py" token="%SERVER_SPACES_NAME%" value="${server.name.spaces}" />
+		 <replace file="createDomain.py" token="%port.spaces%" value="${port.spaces}" />
+		 <replace file="createDomain.py" token="%SERVER_PORTLET_NAME%" value="${server.name.portlet}" />
+		 <replace file="createDomain.py" token="%port.portlet%" value="${port.portlet}" />
+		 <replace file="createDomain.py" token="%SERVER_COLLABORATION_NAME%" value="${server.name.collaboration}" />
+		 <replace file="createDomain.py" token="%port.collaboration%" value="${port.collaboration}" />
+		 <replace file="createDomain.py" token="%SERVER_UTILITIES_NAME%" value="${server.name.utilities}" />
+		 <replace file="createDomain.py" token="%port.utilities%" value="${port.utilities}" />
+		 <replace file="createDomain.py" token="%SERVER_UCM_NAME%" value="${server.name.ucm}" />
+		 <replace file="createDomain.py" token="%port.ucm%" value="${port.ucm}" />
+        <exec executable="${executable.wlst}" input="${basedir}/createDomain.py" failonerror="true" 
+		      output="${dir.logs}/config-domain.log" outputproperty="returncode" >
+        </exec>
+		<echo message="log : ${dir.logs}/config-domain.log" />
+		<echo message="return code : ${returncode}" />
+		 <waitfor maxwait="5" maxwaitunit="minute"   timeoutproperty="domain.config.fail">
+			<available file="${middlewarehome}/user_projects/domains/${domain.name}/bin/startWebLogic.sh"/>
+        </waitfor>
+		<echo message="domain.config.fail = ${domain.config.fail}" />
+        <fail if="domain.config.fail"> Domain configuration is failure.Please check.</fail>
+    </target>
+	
+	<!-- config pesudo env (start)-->
+    <target name="check-hardcodetool">
+     <condition property="hardcodetool.notfound">
+         <not>
+             <available file="${path.shiphome.hardcodetool}/NLS_Bundle.jar" />
+         </not>
+     </condition>
+	</target>
+	<target name="get-hardcodetool" depends="check-hardcodetool" if="hardcodetool.notfound">
+		<echo  message="Hardcode tool not found? ${hardcodetool.notfound}" />
+		<get src="${res.hardcodetool}" dest="${dir.shiphome}"/>
+	</target>
+	<target name="unzip-hardcodetool" depends="get-hardcodetool">
+		<unzip src="${path.shiphome.hardcodetool}.zip" dest="${dir.shiphome}">
+		</unzip>
+    	<exec executable="chmod">
+    		<arg line="a+x -R ${path.shiphome.hardcodetool}" />
+    	</exec>
+    </target>
+	<target name="set-pesudohome" depends="unzip-hardcodetool">
+   	 	<replace file="${path.shiphome.hardcodetool}/setenv.sh" token="%PSEUDO_HOME%" value="${path.shiphome.hardcodetool}" />
+	</target>
+	<target name="config-pesudo" depends="set-pesudohome">
+    	<java jar="${path.shiphome.hardcodetool}/fileoperUtil.jar" fork="true" failonerror="true">
+    		<arg value="${middlewarehome}/user_projects/domains/${domain.name}/bin/setDomainEnv.sh" />
+    		<arg value=". ${path.shiphome.hardcodetool}/setenv.sh" />
+    	</java>
+	</target>
+	<!-- config pesudo env (end)-->
+
+	<target name="clean" depends="uninstall-rcu,uninstall-wcp,uninstall-wcc,uninstall-wls"
+        	description="uninstall rcu,portal,wcc and clean artifacts generated during testing">
+    	<delete dir="${dir.shiphome}" />
+		<delete dir="${middlewarehome}" />
+    </target>
+	   <target name="uninstall-wcp">
+        <exec executable="${middlewarehome}/Oracle_WC1/oui/bin/runInstaller" failonerror="true" outputproperty="wcpUninstall.log"  >
+        	<arg line=" -silent -deinstall -response ${basedir}/uninstall.rsp" />
+        </exec>
+		<echo message="unistall log : ${wcpUninstall.log}" />
+		<waitfor maxwait="3" maxwaitunit="minute" timeoutproperty="portal.uninstall.fail">
+		   <not>
+			<available file="${middlewarehome}/Oracle_WC1" type="dir"/>
+			</not>
+		</waitfor>
+		<fail if="portal.uninstall.fail" message="ECM removed fail" />
+    </target>
+    <target name="uninstall-wcc">
+        <exec executable="${middlewarehome}/Oracle_ECM1/oui/bin/runInstaller"  failonerror="true"  outputproperty="wccUninstall.log" > 
+        	<arg line="-response ${basedir}/uninstall.rsp -silent -deinstall" />
+        </exec>
+		<echo message="unistall log : ${wccUninstall.log}" />
+		<waitfor maxwait="3" maxwaitunit="minute" timeoutproperty="ecm.uninstall.fail">
+			<not>
+				<available file="${middlewarehome}/Oracle_ECM1" type="dir"/>
+			</not>
+		</waitfor>
+		<fail if="ecm.uninstall.fail" message="ECM removed fail" />
+    </target>
+	 <target name="uninstall-wls">
+        <exec executable="${middlewarehome}/utils/uninstall/uninstall.sh"  failonerror="true" > 
+        	<arg line=" -mode=silent" />
+        </exec>
+	    <sleep minutes="1" />
+    </target>
+</project>

@@ -1,0 +1,207 @@
+#====================================================================
+#Set environments pecific values
+#====================================================================
+
+JAVA_HOME='%JAVA_HOME%'
+
+ORACLE_HOME='%MW_HOME%'
+
+DOMAIN_HOME='%DOMAIN_HOME%'
+DOMAIN_NAME='%DOMAIN_NAME%'
+ADMIN_USER_PASSWD='%ADMIN_USER_PASSWD%'
+JDBC_URL='%JDBC_URL%'
+JDBC_PASSWORD='%JDBC_PASSWORD%'
+USER_PREFIX='%USER_PREFIX%'
+
+SERVER_ADMIN_NAME='%SERVER_ADMIN_NAME%'
+SERVER_ADMIN_PORT=%port.admin%
+
+SERVER_SPACES_NAME='%SERVER_SPACES_NAME%'
+SERVER_SPACES_PORT=%port.spaces%
+
+SERVER_PORTLET_NAME='%SERVER_PORTLET_NAME%'
+SERVER_PORTLET_PORT=%port.portlet%
+
+SERVER_COLLABORATION_NAME='%SERVER_COLLABORATION_NAME%'
+SERVER_COLLABORATION_PORT=%port.collaboration%
+
+SERVER_UTILITIES_NAME='%SERVER_UTILITIES_NAME%'
+SERVER_UTILITIES_PORT=%port.utilities%
+
+SERVER_UCM_NAME='%SERVER_UCM_NAME%'
+SERVER_UCM_PORT=%port.ucm%
+
+#====================================================================
+#Createa domain from the weblogic domain template.
+#====================================================================
+
+readTemplate(ORACLE_HOME+'/wlserver_10.3/common/templates/domains/wls.jar')
+
+#====================================================================
+#Configure the Administration Server and SSL port.
+#====================================================================
+
+cd('Servers/AdminServer')
+set('Name',SERVER_ADMIN_NAME)
+set('ListenPort',SERVER_ADMIN_PORT)
+
+#====================================================================
+#Define the password for user weblogic. You must define the password before you
+#can write the domain.
+#====================================================================
+
+cd('/')
+cd('Security/base_domain/User/weblogic')
+cmo.setPassword('welcome1')
+
+#====================================================================
+#Set domain save options:
+#-Create StartMenu: Enable creation of StartMenu shortcut.
+#-Server StartMode: Set mode to development.
+#-Java Home: Set shome directory for the JVM used whens tarting the server.
+#-Overwrite Domain: Overwrites domain,when saving,if one exists.
+#====================================================================
+
+setOption('CreateStartMenu','false')
+setOption('ServerStartMode','dev')
+setOption('JavaHome',JAVA_HOME)
+setOption('OverwriteDomain','true')
+
+#====================================================================
+#Write the domain,close the domain template,and reopen the saved domain.
+#====================================================================
+
+writeDomain(DOMAIN_HOME+'/'+DOMAIN_NAME)
+closeTemplate()
+
+#Add extension
+readDomain(DOMAIN_HOME+'/'+DOMAIN_NAME)
+setOption('ReplaceDuplicates','true')
+print 1
+#Oracle Enterprise Manager
+addTemplate(ORACLE_HOME+'/oracle_common/common/templates/applications/oracle.em_11_1_1_0_0_template.jar')
+dumpStack()
+print 2
+#Oracle WSM Policy Manager
+addTemplate(ORACLE_HOME+'/oracle_common/common/templates/applications/oracle.wsmpm_template_11.1.1.jar')
+dumpStack()
+print 3
+#Oracle WebCenter Spaces
+addTemplate(ORACLE_HOME+'/Oracle_WC1/common/templates/applications/oracle.wc_spaces_template_11.1.1.jar')
+dumpStack()
+print 4
+#Oracle WebCenter Discussion Server
+addTemplate(ORACLE_HOME+'/Oracle_WC1/common/templates/applications/oracle.owc_discussions_template_11.1.1.jar')
+dumpStack()
+#Oracle WebCenter ActivityGraph Engines
+addTemplate(ORACLE_HOME+'/Oracle_WC1/common/templates/applications/oracle.activitygraph_template_11.1.1.jar')
+print 5
+#Oracle WebCenter Personalization
+addTemplate(ORACLE_HOME+'/Oracle_WC1/common/templates/applications/oracle.wcps_template_11.1.1.jar')
+print 6
+#Oracle WebCenter Portlet Producers
+addTemplate(ORACLE_HOME+'/Oracle_WC1/common/templates/applications/oracle.producer_apps_template_11.1.1.jar')
+print 7
+#Oracle UCM
+addTemplate(ORACLE_HOME+'/Oracle_ECM1/common/templates/applications/oracle.ucm.cs_template_11.1.1.jar')
+
+#====================================================================
+print "Configure initial server settings"
+#====================================================================
+cd('/')
+
+cd('Servers/WC_Spaces')
+set('Name',SERVER_SPACES_NAME)
+set('ListenPort',SERVER_SPACES_PORT)
+
+cd('/')
+
+cd('Servers/WC_Portlet')
+set('Name',SERVER_PORTLET_NAME)
+set('ListenPort',SERVER_PORTLET_PORT)
+
+cd('/')
+
+cd('Servers/WC_Collaboration')
+set('Name',SERVER_COLLABORATION_NAME)
+set('ListenPort',SERVER_COLLABORATION_PORT)
+
+cd('/')
+
+cd('Servers/WC_Utilities')
+set('Name',SERVER_UTILITIES_NAME)
+set('ListenPort',SERVER_UTILITIES_PORT)
+
+cd('/')
+
+cd('Servers/UCM_server1')
+set('Name',SERVER_UCM_NAME)
+set('ListenPort',SERVER_UCM_PORT)
+
+#====================================================================
+print "Configure database connection pool settings"
+#====================================================================
+cd('/')
+
+cd('/JDBCSystemResources/mds-owsm/JdbcResource/mds-owsm/JDBCDriverParams/NO_NAME_0')
+set('URL',JDBC_URL)
+cmo.setPasswordEncrypted(JDBC_PASSWORD)
+cd('Properties/NO_NAME_0/Property/user')
+cmo.setValue(USER_PREFIX+'_MDS')
+
+cd('/JDBCSystemResources/WebCenterDS/JdbcResource/WebCenterDS/JDBCDriverParams/NO_NAME_0')
+set('URL',JDBC_URL)
+cmo.setPasswordEncrypted(JDBC_PASSWORD)
+cd('Properties/NO_NAME_0/Property/user')
+cmo.setValue(USER_PREFIX+'_WEBCENTER')
+
+cd('/JDBCSystemResources/mds-SpacesDS/JdbcResource/mds-SpacesDS/JDBCDriverParams/NO_NAME_0')
+set('URL',JDBC_URL)
+cmo.setPasswordEncrypted(JDBC_PASSWORD)
+cd('Properties/NO_NAME_0/Property/user')
+cmo.setValue(USER_PREFIX+'_MDS')
+
+cd('/JDBCSystemResources/OWC_DiscussionDS/JdbcResource/OWC_DiscussionDS/JDBCDriverParams/NO_NAME_0')
+set('URL',JDBC_URL)
+cmo.setPasswordEncrypted(JDBC_PASSWORD)
+cd('Properties/NO_NAME_0/Property/user')
+cmo.setValue(USER_PREFIX+'_DISCUSSIONS')
+
+cd('/JDBCSystemResources/ActivitiesDS/JdbcResource/ActivitiesDS/JDBCDriverParams/NO_NAME_0')
+set('URL',JDBC_URL)
+cmo.setPasswordEncrypted(JDBC_PASSWORD)
+cd('Properties/NO_NAME_0/Property/user')
+cmo.setValue(USER_PREFIX+'_ACTIVITIES')
+
+cd('/JDBCSystemResources/PersonalizationDS/JdbcResource/PersonalizationDS/JDBCDriverParams/NO_NAME_0')
+set('URL',JDBC_URL)
+cmo.setPasswordEncrypted(JDBC_PASSWORD)
+cd('Properties/NO_NAME_0/Property/user')
+cmo.setValue(USER_PREFIX+'_WEBCENTER')
+
+cd('/JDBCSystemResources/mds-wcpsDS/JdbcResource/mds-wcpsDS/JDBCDriverParams/NO_NAME_0')
+set('URL',JDBC_URL)
+cmo.setPasswordEncrypted(JDBC_PASSWORD)
+cd('Properties/NO_NAME_0/Property/user')
+cmo.setValue(USER_PREFIX+'_MDS')
+
+cd('/JDBCSystemResources/PortletDS/JdbcResource/PortletDS/JDBCDriverParams/NO_NAME_0')
+set('URL',JDBC_URL)
+cmo.setPasswordEncrypted(JDBC_PASSWORD)
+cd('Properties/NO_NAME_0/Property/user')
+cmo.setValue(USER_PREFIX+'_PORTLET')
+
+cd('/JDBCSystemResources/CSDS/JdbcResource/CSDS/JDBCDriverParams/NO_NAME_0')
+set('URL',JDBC_URL)
+cmo.setPasswordEncrypted(JDBC_PASSWORD)
+cd('Properties/NO_NAME_0/Property/user')
+cmo.setValue(USER_PREFIX+'_OCS')
+
+#====================================================================
+print "Write the domain and close the domain template."
+#====================================================================
+
+updateDomain()
+closeDomain()
+
+exit()

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project name="start-stop-Server" default="start-admin">
+<import file="build.xml" />
+
+<target name="start-admin">
+	<taskdef resource="net/sf/antcontrib/antlib.xml"/>
+    <exec executable="${start.weblogic}" spawn="true" />
+	<waitfor maxwait="3" maxwaitunit="minute" timeoutproperty="admin.notstart">
+		<socket server="${hostname}" port="${port.admin}"/>
+    </waitfor>	
+	<if>
+	 <equals arg1="${admin.notstart}" arg2="true" />
+	 <then>
+	   <echo message="Admin server is not running" />
+	 </then>
+	 <else>
+	   <echo message="Admin server is  running" />
+	 </else>
+	</if>
+</target>
+<target name="start-spaces" >
+	<taskdef resource="net/sf/antcontrib/antlib.xml"/>
+	<exec executable="${start.managed.server}" spawn="true">
+		<arg line="${server.name.spaces} t3://${hostname}:${port.admin} -Dweblogic.management.username=${username} -Dweblogic.management.password=${password}" />
+	</exec>
+	<waitfor maxwait="10" maxwaitunit="minute" timeoutproperty="spaces.notstart">
+		<socket server="${hostname}" port="${port.spaces}"/>
+    </waitfor>
+	<if>
+	 <equals arg1="${spaces.notstart}" arg2="true" />
+	 <then>
+	   <echo message="Spaces server is not running" />
+	 </then>
+	 <else>
+	   <echo message="Spaces server is  running" />
+	 </else>
+	</if>
+</target>
+<target name="start-portlet" >
+	<taskdef resource="net/sf/antcontrib/antlib.xml"/>
+	<exec executable="${start.managed.server}"  spawn="true">
+		<arg line="${server.name.portlet} t3://${hostname}:${port.admin} -Dweblogic.management.username=${username} -Dweblogic.management.password=${password}" />
+	</exec>
+ 	<waitfor maxwait="10" maxwaitunit="minute" timeoutproperty="portlet.notstart">
+		<socket server="${hostname}" port="${port.portlet}"/>
+    </waitfor>
+	<if>
+	 <equals arg1="${portlet.notstart}" arg2="true" />
+	 <then>
+	   <echo message="portlet server is not running" />
+	 </then>
+	 <else>
+	   <echo message="portlet server is  running" />
+	 </else>
+	</if>
+</target>
+<target name="start-collaboration" >
+	<taskdef resource="net/sf/antcontrib/antlib.xml"/>
+	<exec executable="${start.managed.server}"  spawn="true">
+		<arg line="${server.name.collaboration} t3://${hostname}:${port.admin} -Dweblogic.management.username=${username} -Dweblogic.management.password=${password}" />
+	</exec>
+	<waitfor maxwait="10" maxwaitunit="minute" timeoutproperty="collaboration.notstart">
+		<socket server="${hostname}" port="${port.collaboration}"/>
+    </waitfor>
+	<if>
+	 <equals arg1="${collaboration.notstart}" arg2="true" />
+	 <then>
+	   <echo message="collaboration server is not running" />
+	 </then>
+	 <else>
+	   <echo message="collaboration server is  running" />
+	 </else>
+	</if>
+</target>
+<target name="start-utilities" >
+	<taskdef resource="net/sf/antcontrib/antlib.xml"/>
+	<exec executable="${start.managed.server}"  spawn="true">
+		<arg line="${server.name.utilities} t3://${hostname}:${port.admin} -Dweblogic.management.username=${username} -Dweblogic.management.password=${password}" />
+	</exec>
+	<waitfor maxwait="10" maxwaitunit="minute" timeoutproperty="utilities.notstart">
+		<socket server="${hostname}" port="${port.utilities}"/>
+    </waitfor>
+	<if>
+	 <equals arg1="${utilities.notstart}" arg2="true" />
+	 <then>
+	   <echo message="utilities server is not running" />
+	 </then>
+	 <else>
+	   <echo message="utilities server is  running" />
+	 </else>
+	</if>
+</target>
+<target name="start-ucm" >
+	<taskdef resource="net/sf/antcontrib/antlib.xml"/>
+	<exec executable="${start.managed.server}"  spawn="true">
+		<arg line="${server.name.ucm} t3://${hostname}:${port.admin} -Dweblogic.management.username=${username} -Dweblogic.management.password=${password}" />
+	</exec>
+	<waitfor maxwait="10" maxwaitunit="minute" timeoutproperty="ucm.notstart">
+		<socket server="${hostname}" port="${port.ucm}"/>
+    </waitfor>
+	<if>
+	 <equals arg1="${ucm.notstart}" arg2="true" />
+	 <then>
+	   <echo message="ucm server is not running" />
+	 </then>
+	 <else>
+	   <echo message="ucm server is  running" />
+	 </else>
+	</if>
+</target>
+<target name="stop-all">
+	<exec executable="${stop.managed.server}" timeout="60000" failonerror="false" >
+		<arg line="${server.name.spaces}" />
+	</exec>
+	<exec executable="${stop.managed.server}" timeout="60000" failonerror="false" >
+		<arg line="${server.name.portlet}" />
+	</exec>
+	<exec executable="${stop.managed.server}" timeout="60000" failonerror="false" >
+		<arg line="${server.name.collaboration}" />
+	</exec>
+    <exec executable="${stop.managed.server}" timeout="60000" failonerror="false" >
+		<arg line="${server.name.ucm}" />
+	</exec>
+	<exec executable="${stop.weblogic}" timeout="60000" failonerror="false" />
+</target>
+<target name="start-all" depends="start-admin,start-spaces,start-portlet,start-collaboration,start-utilities,start-ucm" /> 
+
+</project>
